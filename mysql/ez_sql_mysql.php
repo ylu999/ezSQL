@@ -72,7 +72,7 @@
 		*  Try to connect to mySQL database server
 		*/
 
-		function connect($dbuser='', $dbpassword='', $dbhost='localhost')
+		function connect($dbuser='', $dbpassword='', $dbhost='')
 		{
 			global $ezsql_mysql_str; $return_val = false;
 			
@@ -82,11 +82,33 @@
 			// Must have a user and a password
 			if ( ! $dbuser )
 			{
-				$this->register_error($ezsql_mysql_str[1].' in '.__FILE__.' on line '.__LINE__);
-				$this->show_errors ? trigger_error($ezsql_mysql_str[1],E_USER_WARNING) : null;
+				$dbuser = $this->dbuser;
+				if( ! $dbuser){
+					$this->register_error($ezsql_mysql_str[1].' in '.__FILE__.' on line '.__LINE__);
+					$this->show_errors ? trigger_error($ezsql_mysql_str[1],E_USER_WARNING) : null;
+					return $return_val;
+				}
+			}
+			if ( ! $dbpassword )
+			{
+				$dbpassword = $this->dbpassword;
+				if( ! $dbpassword){
+					$this->register_error($ezsql_mysql_str[1].' in '.__FILE__.' on line '.__LINE__);
+					$this->show_errors ? trigger_error($ezsql_mysql_str[1],E_USER_WARNING) : null;
+					return $return_val;
+				}
+			}
+			if ( ! $dbhost )
+			{
+				$dbhost = $this->dbhost;
+				if( ! $dbhost){
+					$this->register_error($ezsql_mysql_str[1].' in '.__FILE__.' on line '.__LINE__);
+					$this->show_errors ? trigger_error($ezsql_mysql_str[1],E_USER_WARNING) : null;
+					return $return_val;
+				}
 			}
 			// Try to establish the server database handle
-			else if ( ! $this->dbh = @mysql_connect($dbhost,$dbuser,$dbpassword,true,131074) )
+			if ( ! $this->dbh = @mysql_connect($dbhost,$dbuser,$dbpassword,true,131074) )
 			{
 				$this->register_error($ezsql_mysql_str[2].' in '.__FILE__.' on line '.__LINE__);
 				$this->show_errors ? trigger_error($ezsql_mysql_str[2],E_USER_WARNING) : null;
@@ -118,10 +140,19 @@
 				$this->register_error($ezsql_mysql_str[3].' in '.__FILE__.' on line '.__LINE__);
 				$this->show_errors ? trigger_error($ezsql_mysql_str[3],E_USER_WARNING) : null;
 			}
-
-			// Must have an active database connection
-			else if ( ! $this->dbh )
+			// If there is no existing database connection then try to connect
+			if ( ! isset($this->dbh) || ! $this->dbh )
 			{
+				$this->connect($this->dbuser, $this->dbpassword, $this->dbhost);
+				$this->select($this->dbname,$this->encoding);
+				// No existing connection at this point means the server is unreachable
+				if ( ! isset($this->dbh) || ! $this->dbh )
+					return false;
+			}
+			// Must have an active database connection
+			if ( ! $this->dbh )
+			{
+				
 				$this->register_error($ezsql_mysql_str[4].' in '.__FILE__.' on line '.__LINE__);
 				$this->show_errors ? trigger_error($ezsql_mysql_str[4],E_USER_WARNING) : null;
 			}
